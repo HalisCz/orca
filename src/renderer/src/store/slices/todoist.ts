@@ -17,6 +17,9 @@ export type TodoistSlice = {
 
 const DISCONNECTED: TodoistConnectionStatus = { connected: false, viewer: null }
 
+// Why: a status read started before connect/disconnect settles must not overwrite its result.
+let mutationGeneration = 0
+
 // Why: Todoist runs only through the local main process (no remote-runtime RPC
 // yet), but readiness readers compare against the provider runtime context key.
 export const createTodoistSlice: StateCreator<AppState, [], [], TodoistSlice> = (set, get) => ({
@@ -26,13 +29,17 @@ export const createTodoistSlice: StateCreator<AppState, [], [], TodoistSlice> = 
 
   checkTodoistConnection: async () => {
     const contextKey = getProviderRuntimeContextKey(get().settings)
+    const generation = mutationGeneration
     let status = DISCONNECTED
     try {
       status = await window.api.todoist.status()
     } catch {
       // Why: a failed status read must still settle readiness as disconnected.
     }
-    if (getProviderRuntimeContextKey(get().settings) !== contextKey) {
+    if (
+      generation !== mutationGeneration ||
+      getProviderRuntimeContextKey(get().settings) !== contextKey
+    ) {
       return
     }
     set({
@@ -45,6 +52,7 @@ export const createTodoistSlice: StateCreator<AppState, [], [], TodoistSlice> = 
   connectTodoist: async (args) => {
     try {
       const result = await window.api.todoist.connect(args)
+      mutationGeneration += 1
       if (result.ok) {
         set({
           todoistStatus: { connected: true, viewer: result.viewer },
@@ -59,11 +67,11 @@ export const createTodoistSlice: StateCreator<AppState, [], [], TodoistSlice> = 
   },
 
   disconnectTodoist: async () => {
-    await window.api.todoist.disconnect()
-    set({
-      todoistStatus: DISCONNECTED,
-      todoistStatusChecked: true,
-      todoistStatusContextKey: getProviderRuntimeContextKey(get().settings)
+    // Why: a failed delete leaves the token on disk; re-reading status keeps the UI truthful.
+    await window.api.todoist.disconnect().catch((error: unknown) => {
+      console.error('[todoist] disconnect failed', error)
     })
+    mutationGeneration += 1
+    await get().checkTodoistConnection()
   }
 })

@@ -66,3 +66,14 @@ export function normalizeWorkspaceLinkedItem(value: unknown): WorkspaceLinkedIte
       : {})
   }
 }
+
+// Why: Jira and Todoist links ride only in linkedWorkItem/linkedTaskSourceContext, which a
+// runtime without worktree.linked-work-item-context.v1 strips silently.
+export function getContextOnlyLinkProviderLabel(
+  ...providers: (string | null | undefined)[]
+): 'Jira' | 'Todoist' | null {
+  if (providers.includes('jira')) {
+    return 'Jira'
+  }
+  return providers.includes('todoist') ? 'Todoist' : null
+}
