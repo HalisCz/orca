@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, unlinkSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -87,15 +87,13 @@ export function loadTodoistToken(): string | null {
   }
 }
 
+/** Throws when a file cannot be deleted, so a failed disconnect is not reported as success. */
 export function clearTodoistCredential(): void {
+  // Why: undefined re-reads disk, so a token that survives a failed delete still shows as connected.
   cachedToken = null
-  cachedViewer = null
+  cachedViewer = undefined
   credentialError = null
   for (const path of [getTokenPath(), getViewerPath()]) {
-    try {
-      unlinkSync(path)
-    } catch {
-      // Already gone.
-    }
+    rmSync(path, { force: true })
   }
 }

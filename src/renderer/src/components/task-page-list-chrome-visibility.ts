@@ -8,7 +8,6 @@ export type TaskPageListChromeVisibilityState = {
   hasLinearIssueDetail: boolean
   hasLinearProjectContext: boolean
   hasLinearViewContext: boolean
-  hasTodoistDetail?: boolean
 }
 
 export function shouldHideTaskPageListChrome({
@@ -18,8 +17,7 @@ export function shouldHideTaskPageListChrome({
   hasJiraDetail,
   hasLinearIssueDetail,
   hasLinearProjectContext,
-  hasLinearViewContext,
-  hasTodoistDetail = false
+  hasLinearViewContext
 }: TaskPageListChromeVisibilityState): boolean {
   // Why: provider-specific selection can intentionally survive source switches;
   // stale detail state from another provider must not hide the active list chrome.
@@ -33,6 +31,7 @@ export function shouldHideTaskPageListChrome({
     case 'linear':
       return hasLinearIssueDetail || hasLinearProjectContext || hasLinearViewContext
     case 'todoist':
-      return hasTodoistDetail
+      // Why: the Todoist drawer overlays the list instead of replacing it.
+      return false
   }
 }

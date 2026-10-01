@@ -5,6 +5,7 @@ import type { LinearWorkspaceSelection } from '../../../shared/linear/workspace-
 import type { JiraIssue } from '../../../shared/jira-types'
 import type { TodoistTask } from '../../../shared/todoist-types'
 import { normalizeTaskSourceContext } from '../../../shared/task-source-context'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import { buildLinearIssueLinkedWorkItem } from '@/lib/linear-linked-work-item'
 import {
   getLinearIssueWorkspaceName,
@@ -34,7 +35,6 @@ export function useTaskPageComposerActions(model: TaskPageJiraListEffectsModel) 
     linearTaskSourceContext,
     jiraTaskSourceContext,
     fallbackTaskSourceProjectId,
-    accountBackedTaskSourceHostId,
     gitlabDialogItem,
     dialogWorkItem,
     selectedLinearIssue,
@@ -247,7 +247,8 @@ export function useTaskPageComposerActions(model: TaskPageJiraListEffectsModel) 
       const taskSourceContext = normalizeTaskSourceContext({
         provider: 'todoist',
         projectId: fallbackTaskSourceProjectId,
-        hostId: accountBackedTaskSourceHostId,
+        // Why: the Todoist token and API calls live in the local main process, whatever runtime is focused.
+        hostId: LOCAL_EXECUTION_HOST_ID,
         providerIdentity: {
           provider: 'todoist',
           projectId: task.projectId,
@@ -268,7 +269,7 @@ export function useTaskPageComposerActions(model: TaskPageJiraListEffectsModel) 
         telemetrySource: 'sidebar'
       })
     },
-    [accountBackedTaskSourceHostId, fallbackTaskSourceProjectId, openModal]
+    [fallbackTaskSourceProjectId, openModal]
   )
   const taskPageListChromeHidden = shouldHideTaskPageListChrome({
     taskSource,
