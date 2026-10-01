@@ -5,8 +5,6 @@ import {
   disconnectTodoist,
   getTodoistComments,
   getTodoistStatus,
-  getTodoistTask,
-  listTodoistProjects,
   listTodoistTasks
 } from '../todoist/todoist-client'
 
@@ -40,17 +38,10 @@ export function registerTodoistHandlers(): void {
     }
   )
 
-  ipcMain.handle('todoist:getTask', async (_event, args?: { id?: unknown }) => {
-    const id = normalizeId(args?.id)
-    return id ? getTodoistTask(id) : null
-  })
-
   ipcMain.handle('todoist:getComments', async (_event, args?: { taskId?: unknown }) => {
     const taskId = normalizeId(args?.taskId)
     return taskId ? getTodoistComments(taskId) : []
   })
-
-  ipcMain.handle('todoist:listProjects', async () => listTodoistProjects())
 
   ipcMain.handle('todoist:closeTask', async (_event, args?: { id?: unknown }) => {
     const id = normalizeId(args?.id)

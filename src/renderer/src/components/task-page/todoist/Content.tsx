@@ -99,6 +99,10 @@ function TodoistTaskList({
       .then((result) => {
         if (!cancelled) {
           setTasks(sortTodoistTasks(result))
+          // Why: an open drawer should show the refreshed copy, not the snapshot it opened with.
+          setSelectedTask((current) =>
+            current ? (result.find((task) => task.id === current.id) ?? current) : current
+          )
         }
       })
       .catch((err: unknown) => {

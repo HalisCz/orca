@@ -20,15 +20,6 @@ import type {
 const TODOIST_API_BASE = 'https://api.todoist.com/api/v1'
 const PAGE_SIZE = 200
 
-export class TodoistApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number | null = null
-  ) {
-    super(message)
-  }
-}
-
 async function todoistRequest(token: string, path: string, init?: RequestInit): Promise<unknown> {
   const url = `${TODOIST_API_BASE}${path}`
   const httpClient = getMainHttpClient()
@@ -47,7 +38,7 @@ async function todoistRequest(token: string, path: string, init?: RequestInit): 
       response.status === 401 || response.status === 403
         ? 'Todoist rejected the API token.'
         : await readTodoistError(response)
-    throw new TodoistApiError(message, response.status)
+    throw new Error(message)
   }
   return response.status === 204 ? null : response.json()
 }
@@ -75,8 +66,11 @@ async function fetchPages(token: string, path: string, limit: number): Promise<u
     const page = await todoistRequest(token, `${path}${separator}${params}`)
     const results = isRecord(page) && Array.isArray(page.results) ? page.results : []
     items.push(...results)
+    // Why: an empty page with a cursor (repeated or not) would otherwise loop forever.
     cursor =
-      isRecord(page) && typeof page.next_cursor === 'string' ? page.next_cursor || null : null
+      results.length > 0 && isRecord(page) && typeof page.next_cursor === 'string'
+        ? page.next_cursor || null
+        : null
   } while (cursor && items.length < limit)
   return items.slice(0, limit)
 }
@@ -84,7 +78,7 @@ async function fetchPages(token: string, path: string, limit: number): Promise<u
 function requireToken(): string {
   const token = loadTodoistToken()
   if (!token) {
-    throw new TodoistApiError('Todoist is not connected.')
+    throw new Error('Todoist is not connected.')
   }
   return token
 }
@@ -120,7 +114,7 @@ export function getTodoistStatus(): TodoistConnectionStatus {
   return { connected: viewer !== null, viewer, ...(error ? { error } : {}) }
 }
 
-export async function listTodoistProjects(): Promise<TodoistProject[]> {
+async function listTodoistProjects(): Promise<TodoistProject[]> {
   const raw = await fetchPages(requireToken(), '/projects', 1000)
   return raw.flatMap((item) =>
     isRecord(item) && typeof item.id === 'string' && typeof item.name === 'string'
@@ -144,23 +138,6 @@ export async function listTodoistTasks(query: string, limit: number): Promise<To
     const task = mapTodoistTask(item, names)
     return task ? [task] : []
   })
-}
-
-export async function getTodoistTask(id: string): Promise<TodoistTask | null> {
-  const token = requireToken()
-  try {
-    const [raw, names] = await Promise.all([
-      todoistRequest(token, `/tasks/${encodeURIComponent(id)}`),
-      projectNames()
-    ])
-    return mapTodoistTask(raw, names)
-  } catch (error) {
-    // Why: Todoist answers a malformed id with 400 rather than 404.
-    if (error instanceof TodoistApiError && (error.status === 404 || error.status === 400)) {
-      return null
-    }
-    throw error
-  }
 }
 
 export async function getTodoistComments(taskId: string): Promise<TodoistComment[]> {

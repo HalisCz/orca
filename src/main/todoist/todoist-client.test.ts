@@ -1,11 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setMainHttpClient } from '../network/http-client'
-import {
-  closeTodoistTask,
-  connectTodoist,
-  getTodoistTask,
-  listTodoistTasks
-} from './todoist-client'
+import { closeTodoistTask, connectTodoist, listTodoistTasks } from './todoist-client'
 
 vi.mock('../network/proxy-settings', () => ({
   ensureElectronProxyFromEnvironment: vi.fn(async () => {})
@@ -77,13 +72,24 @@ describe('todoist client', () => {
     expect(calls.filter((url) => url.includes('/tasks/filter'))).toHaveLength(2)
   })
 
-  it('treats a deleted task as missing', async () => {
-    mockFetch((url) =>
-      url.pathname === '/api/v1/projects'
-        ? { results: [], next_cursor: null }
-        : { id: 't1', content: 'Gone', is_deleted: true }
-    )
-    expect(await getTodoistTask('t1')).toBeNull()
+  it('drops deleted tasks and stops on an empty page that still has a cursor', async () => {
+    const calls = mockFetch((url) => {
+      if (url.pathname === '/api/v1/projects') {
+        return { results: [], next_cursor: null }
+      }
+      return url.searchParams.get('cursor')
+        ? { results: [], next_cursor: 'c1' }
+        : {
+            results: [
+              { id: 't1', content: 'Gone', is_deleted: true },
+              { id: 't2', content: 'Kept' }
+            ],
+            next_cursor: 'c1'
+          }
+    })
+    const tasks = await listTodoistTasks('', 50)
+    expect(tasks.map((task) => task.id)).toEqual(['t2'])
+    expect(calls.filter((url) => new URL(url).pathname === '/api/v1/tasks')).toHaveLength(2)
   })
 
   it('lists all active tasks when the query is empty', async () => {
