@@ -588,6 +588,9 @@
               }
             }
           }
+        },
+        "todoist": {
+          "disconnectFailed": "Todoist の接続を解除できませんでした"
         }
       }
     },

@@ -692,6 +692,9 @@
               }
             }
           }
+        },
+        "todoist": {
+          "disconnectFailed": "Impossible de déconnecter Todoist"
         }
       }
     },

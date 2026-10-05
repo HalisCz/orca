@@ -99,9 +99,12 @@ function TodoistTaskList({
       .then((result) => {
         if (!cancelled) {
           setTasks(sortTodoistTasks(result))
-          // Why: an open drawer should show the refreshed copy, not the snapshot it opened with.
+          // Why: show the refreshed copy, and close the drawer once its task drops out of the list;
+          // a task completed here stays open so its Completed badge remains visible.
           setSelectedTask((current) =>
-            current ? (result.find((task) => task.id === current.id) ?? current) : current
+            current && !current.completed
+              ? (result.find((task) => task.id === current.id) ?? null)
+              : current
           )
         }
       })
