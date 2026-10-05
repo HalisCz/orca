@@ -657,6 +657,9 @@
               }
             }
           }
+        },
+        "todoist": {
+          "disconnectFailed": "Couldn’t disconnect Todoist"
         }
       }
     },

@@ -486,6 +486,9 @@
               }
             }
           }
+        },
+        "todoist": {
+          "disconnectFailed": "Todoist 연결을 해제하지 못했습니다"
         }
       }
     },

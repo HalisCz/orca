@@ -486,6 +486,9 @@
               }
             }
           }
+        },
+        "todoist": {
+          "disconnectFailed": "无法断开 Todoist 连接"
         }
       }
     },

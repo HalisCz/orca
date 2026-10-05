@@ -486,6 +486,9 @@
               }
             }
           }
+        },
+        "todoist": {
+          "disconnectFailed": "No se pudo desconectar Todoist"
         }
       }
     },
